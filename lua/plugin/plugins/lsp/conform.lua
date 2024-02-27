@@ -8,8 +8,10 @@ return {
             typescriptreact = { "prettier" },
             javascript = { "prettier" },
             javascriptreact = { "prettier" },
+            php = { "prettier" },
             json = { "prettier" },
             html = { "prettier" },
+            python = { "black" },
             css = { "prettier" },
             scss = { "prettier" },
             markdown = { "prettier" },
@@ -37,7 +39,8 @@ return {
         require("conform.formatters.prettier").args = function(self, ctx)
             local prettier_roots = { ".prettierrc", ".prettierrc.json", "prettier.config.js" }
             local args = {
-                "--tab-width 4",
+                "--tab-width",
+                "4",
                 "--no-semi",
                 "--no-bracket-spacing",
                 "--single-quote",
