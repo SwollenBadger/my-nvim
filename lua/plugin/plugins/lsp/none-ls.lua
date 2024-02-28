@@ -43,6 +43,7 @@ return {
                     "prettier",
                     "black",
                     "stylua",
+                    "ocamlformat",
                 },
                 automatic_installation = true, -- You can still set this to `true`
             })
