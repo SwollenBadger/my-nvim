@@ -77,11 +77,6 @@ return {
 
             opts.desc = "Restart LSP"
             keymap.set("n", "<leader>rs", ":LspRestart<CR>", opts) -- mapping so restart lsp if necessary
-
-            opts.desc = "Format code"
-            keymap.set({ "n", "x" }, "<leader>fr", function()
-                vim.lsp.buf.format({ async = true })
-            end, opts)
         end
 
         mason_lspconfig.setup({
