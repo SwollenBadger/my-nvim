@@ -1,6 +1,18 @@
 return {
     "stevearc/conform.nvim",
-    event = "LspAttach",
+    event = { "BufWritePre" },
+    cmd = { "ConformInfo" },
+    keys = {
+        {
+            -- Customize or remove this keymap to your liking
+            "<leader>fr",
+            function()
+                require("conform").format({ async = true, lsp_fallback = true })
+            end,
+            mode = "",
+            desc = "Format buffer",
+        },
+    },
     opts = {
         quiet = true,
         formatters_by_ft = {
@@ -30,7 +42,7 @@ return {
                 return
             end
 
-            return { timeout_ms = 500, lsp_fallback = true, async = true }
+            return { lsp_fallback = true, async = true }
         end,
         format_after_save = { lsp_fallback = true },
     },
