@@ -1,0 +1,216 @@
+return {
+	"willothy/nvim-cokeline",
+	event = "VimEnter",
+	dependencies = {
+		"nvim-lua/plenary.nvim", -- Required for v0.4.0+
+		"nvim-tree/nvim-web-devicons", -- If you want devicons
+		"moll/vim-bbye",
+	},
+	keys = {
+		{
+			"<leader>bd",
+			function()
+				require("core.util").buf_kill("Bdelete")
+			end,
+		},
+		{ "<S-h>", "<Plug>(cokeline-focus-prev)", { silent = true } },
+		{ "<S-l>", "<Plug>(cokeline-focus-next)", { silent = true } },
+		{ "<C-n>", "<Plug>(cokeline-switch-prev)", { silent = true } },
+		{ "<C-m>", "<Plug>(cokeline-switch-next)", { silent = true } },
+	},
+	config = true,
+	opts = function()
+		local mocha = require("catppuccin.palettes").get_palette("mocha")
+		local function is_buffer_harpoon(buffer)
+			local harpoon = require("harpoon")
+			local harpoon_list = harpoon:list():display()
+			if #harpoon_list < 1 then
+				return false
+			end
+
+			for _, value in pairs(harpoon_list) do
+				local path = require("plenary.path"):new(buffer.path):make_relative(vim.uv.cwd())
+				if value == path then
+					return true
+				end
+			end
+		end
+
+		local separator = {
+			text = " ",
+			truncation = { priority = 1 },
+			fg = function(buffer)
+				return buffer.is_focused and mocha.overlay0 or mocha.surface0
+			end,
+		}
+
+		local dev_icon = {
+			text = function(buffer)
+				return "" .. buffer.devicon.icon
+			end,
+			fg = function(buffer)
+				return buffer.devicon.color
+			end,
+		}
+
+		local harpoon_status = {
+			text = function(buffer)
+				return is_buffer_harpoon(buffer) and "󰐃 " or ""
+			end,
+			fg = function(buffer)
+				return (buffer.is_readonly and mocha.overlay0) or (buffer.is_focused and mocha.text) or mocha.overlay0
+			end,
+			bold = function(buffer)
+				return buffer.is_focused
+			end,
+		}
+
+		local filename = {
+			text = function(buffer)
+				return (buffer.is_readonly and buffer.unique_prefix .. buffer.filename .. " 󰌾 ")
+					or buffer.unique_prefix .. buffer.filename .. " "
+			end,
+			fg = function(buffer)
+				return (buffer.is_readonly and mocha.overlay0) or (buffer.is_focused and mocha.text) or mocha.overlay0
+			end,
+			bold = function(buffer)
+				return buffer.is_focused
+			end,
+		}
+
+		local diagnostics_error = {
+			text = function(buffer)
+				return (buffer.diagnostics.errors ~= 0 and " ") or ""
+			end,
+			fg = mocha.red,
+		}
+
+		local diagnostics_warning = {
+			text = function(buffer)
+				return (buffer.diagnostics.warnings ~= 0 and "󱧡 ") or ""
+			end,
+			fg = mocha.yellow,
+		}
+
+		local diagnostics_info = {
+			text = function(buffer)
+				return (buffer.diagnostics.infos ~= 0 and "󰌵 ") or ""
+			end,
+			fg = mocha.blue,
+		}
+
+		local diagnostics_hint = {
+			text = function(buffer)
+				return (buffer.diagnostics.hints ~= 0 and "󰛨 ") or ""
+			end,
+			fg = mocha.green,
+		}
+
+		local modified_status = {
+			text = function(buffer)
+				return (buffer.is_modified and " " or "") or ""
+			end,
+			fg = mocha.peach,
+		}
+
+		local close_button = {
+			text = "  ",
+			delete_buffer_on_left_click = true,
+			fg = function(buffer)
+				return buffer.is_focused and mocha.text or mocha.overlay0
+			end,
+		}
+
+		local function harpoon_sorter()
+			local cache = {}
+			local setup = false
+
+			local function marknum(buf, force)
+				local harpoon = require("harpoon")
+				local b = cache[buf.number]
+				if b == nil or force then
+					local path = require("plenary.path"):new(buf.path):make_relative(vim.uv.cwd())
+					for i, mark in ipairs(harpoon:list():display()) do
+						if mark == path then
+							b = i
+							cache[buf.number] = b
+							break
+						end
+					end
+				end
+				return b
+			end
+
+			-- Use this in `config.buffers.new_buffers_position`
+			return function(a, b)
+				-- Only run this if harpoon is loaded, otherwise just use the default sorting.
+				-- This could be used to only run if a user has harpoon installed, but
+				-- I'm mainly using it to avoid loading harpoon on UiEnter.
+				local has_harpoon = package.loaded["harpoon"] ~= nil
+				if not has_harpoon then
+					---@diagnostic disable-next-line: undefined-field
+					return a._valid_index < b._valid_index
+				elseif not setup then
+					local refresh = function()
+						cache = {}
+					end
+					require("harpoon"):extend({
+						ADD = refresh,
+						REMOVE = refresh,
+						REORDER = refresh,
+					})
+					setup = true
+				end
+				-- switch the a and b._valid_index to place non-harpoon buffers on the left
+				-- side of the tabline - this puts them on the right.
+				local ma = marknum(a)
+				local mb = marknum(b)
+				if ma and not mb then
+					return true
+				elseif mb and not ma then
+					return false
+				elseif ma == nil and mb == nil then
+					ma = a._valid_index
+					mb = b._valid_index
+				end
+				return ma < mb
+			end
+		end
+
+		return {
+			show_if_buffers_are_at_least = 0,
+			buffers = {
+				filter_valid = function(buffer)
+					return buffer.filename ~= "[No Name]"
+				end,
+				new_buffers_position = harpoon_sorter(),
+			},
+			default_hl = {
+				bg = "none",
+			},
+			components = {
+				separator,
+				dev_icon,
+				harpoon_status,
+				filename,
+				modified_status,
+				diagnostics_error,
+				diagnostics_warning,
+				diagnostics_info,
+				diagnostics_hint,
+				close_button,
+			},
+			sidebar = {
+				filetype = { "NvimTree", "neo-tree" },
+				components = {
+					{
+						text = " File Tree",
+						style = "bold",
+						fg = mocha.mauve,
+						bg = mocha.mantle,
+					},
+				},
+			},
+		}
+	end,
+}
