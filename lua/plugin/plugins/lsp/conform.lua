@@ -7,7 +7,11 @@ return {
 			-- Customize or remove this keymap to your liking
 			"<leader>fr",
 			function()
-				require("conform").format({ async = true, lsp_fallback = true })
+				require("conform").format({
+					format_after_save = {
+						lsp_fallback = true,
+					},
+				})
 			end,
 			mode = "",
 			desc = "Format buffer",
@@ -43,7 +47,11 @@ return {
 				return
 			end
 
-			return { lsp_fallback = true, async = true }
+			return {
+				format_after_save = {
+					lsp_fallback = true,
+				},
+			}
 		end,
 		format_after_save = { lsp_fallback = true },
 	},
