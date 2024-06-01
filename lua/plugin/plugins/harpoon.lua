@@ -9,11 +9,11 @@ return {
 		harpoon:setup()
 		-- REQUIRED
 
-		vim.keymap.set("n", "<C-a>", function()
-			harpoon:list():add()
+		vim.keymap.set("n", "<C-e>", function()
+			harpoon.ui:toggle_quick_menu(harpoon:list())
 		end)
 		vim.keymap.set("n", "<C-s>", function()
-			harpoon.ui:toggle_quick_menu(harpoon:list())
+			harpoon:list():add()
 		end)
 
 		vim.keymap.set("n", "<C-j>", function()
