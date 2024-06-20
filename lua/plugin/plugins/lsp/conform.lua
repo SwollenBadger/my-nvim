@@ -23,9 +23,9 @@ return {
 			c = { "clang-format" },
 			cpp = { "clang-format" },
 			ocaml = { "ocamlformat" },
-			python = { "black" },
-			php = { "easy-coding-standard" },
+			php = { "php-cs-fixer" },
 			lua = { "stylua" },
+			python = { "black" },
 			typescript = { "prettier" },
 			typescriptreact = { "prettier" },
 			javascript = { "prettier" },
@@ -37,8 +37,8 @@ return {
 			scss = { "prettier" },
 			markdown = { "prettier" },
 			yaml = { "prettier" },
-			sh = { "beautysh" },
-			zsh = { "beautysh" },
+			sh = { "shfmt" },
+			zsh = { "shfmt" },
 		},
 		format_on_save = function(bufnr)
 			-- Disable autoformat for files in a certain path
@@ -57,68 +57,73 @@ return {
 	},
 	config = function(_, opts)
 		local conform = require("conform")
-		conform.setup(opts)
 
-		-- Customize prettier args
-		conform.formatters.prettier = {
-			args = function(self, ctx)
-				local prettier_roots = {
-					".prettierrc",
-					".prettierrc.json",
-					".prettierrc.yaml",
-					".prettierrc.toml",
-					".prettierrc.js",
-					".prettierrc.mjs",
-					".prettierrc.cjs",
-					"prettier.config.js",
-					"prettier.config.mjs",
-					"prettier.config.cjs",
-				}
-				local args = {
-					"--tab-width",
-					"4",
-					"--no-semi",
-					"--no-bracket-spacing",
-					"--single-quote",
-					"--stdin-filepath",
+		conform.formatters = {
+			["php-cs-fixer"] = {
+				command = "php-cs-fixer",
+				args = {
+					"fix",
+					"--rules=@PSR12", -- Formatting preset. Other presets are available, see the php-cs-fixer docs.
 					"$FILENAME",
-				}
+				},
+				stdin = false,
+			},
+			["prettier"] = {
+				args = function(_, ctx)
+					local prettier_roots = {
+						".prettierrc",
+						".prettierrc.json",
+						".prettierrc.yaml",
+						".prettierrc.toml",
+						".prettierrc.js",
+						".prettierrc.mjs",
+						".prettierrc.cjs",
+						"prettier.config.js",
+						"prettier.config.mjs",
+						"prettier.config.cjs",
+					}
+					local args = {
+						"--tab-width",
+						"4",
+						"--no-semi",
+						"--no-bracket-spacing",
+						"--single-quote",
+						"--stdin-filepath",
+						"$FILENAME",
+					}
 
-				local localPrettierConfig = vim.fs.find(prettier_roots, {
-					upward = true,
-					type = "file",
-				})[1]
-				local globalPrettierConfig = vim.fs.find(prettier_roots, {
-					path = vim.fn.stdpath("config"),
-					type = "file",
-				})[1]
-				local disableGlobalPrettierConfig = os.getenv("DISABLE_GLOBAL_PRETTIER_CONFIG")
+					local localPrettierConfig = vim.fs.find(prettier_roots, {
+						upward = true,
+						type = "file",
+					})[1]
+					local globalPrettierConfig = vim.fs.find(prettier_roots, {
+						path = vim.fn.stdpath("config"),
+						type = "file",
+					})[1]
+					local disableGlobalPrettierConfig = os.getenv("DISABLE_GLOBAL_PRETTIER_CONFIG")
 
-				-- Project config takes precedence over global config
-				if localPrettierConfig then
-					args = { "--config", localPrettierConfig, "$FILENAME" }
-				elseif globalPrettierConfig and not disableGlobalPrettierConfig then
-					args = { "--config", globalPrettierConfig, "$FILENAME" }
-				end
+					-- Project config takes precedence over global config
+					if localPrettierConfig then
+						args = { "--config", localPrettierConfig, "$FILENAME" }
+					elseif globalPrettierConfig and not disableGlobalPrettierConfig then
+						args = { "--config", globalPrettierConfig, "$FILENAME" }
+					end
 
-				local hasTailwindPrettierPlugin = vim.fs.find("node_modules/prettier-plugin-tailwindcss", {
-					upward = true,
-					path = ctx.dirname,
-					type = "directory",
-				})[1]
+					local hasTailwindPrettierPlugin = vim.fs.find("node_modules/prettier-plugin-tailwindcss", {
+						upward = true,
+						path = ctx.dirname,
+						type = "directory",
+					})[1]
 
-				if hasTailwindPrettierPlugin then
-					vim.list_extend(args, { "--plugin", "prettier-plugin-tailwindcss" })
-				end
+					if hasTailwindPrettierPlugin then
+						vim.list_extend(args, { "--plugin", "prettier-plugin-tailwindcss" })
+					end
 
-				return args
-			end,
+					return args
+				end,
+			},
 		}
 
-		conform.formatters.beautysh = {
-			prepend_args = function()
-				return { "--indent-size", "4", "--force-function-style", "fnpar" }
-			end,
-		}
+		conform.setup(opts)
 	end,
 }
